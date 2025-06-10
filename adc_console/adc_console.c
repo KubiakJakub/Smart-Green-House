@@ -19,6 +19,8 @@ const uint32_t motor_update_interval_ms = 100;         // Interwał aktualizacji
 #define HCSR04_TRIG_PIN 20     // Pin TRIG dla HC-SR04
 #define HCSR04_ECHO_PIN 21     // Pin ECHO dla HC-SR04
 
+#define LED_PIN 25 // Wbudowana dioda LED na Pico
+
 volatile int8_t fan_speed = 0;    // Prędkość wentylatora (aktualna)
 volatile int8_t motor_speed = 0;  // Prędkość pompy (aktualna)
 
@@ -32,6 +34,9 @@ int main() {
     gpio_init(14);                // Zasilanie czujnika gleby
     gpio_set_dir(14, GPIO_OUT);
     gpio_put(14, 0);
+
+    gpio_init(LED_PIN);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
 
     motors_init();                // Inicjalizacja silników
     hcsr04_init(HCSR04_TRIG_PIN, HCSR04_ECHO_PIN); // Inicjalizacja HC-SR04
@@ -155,6 +160,14 @@ int main() {
             }
 
             last_measurement_time = now;
+        }
+
+        // Odczyt natężenia światła i sterowanie diodą LED
+        float photo_voltage = read_photo();
+        if (photo_voltage < 1.0f) { // Próg jasności
+            gpio_put(LED_PIN, 1);   // Włącz LED, gdy ciemno
+        } else {
+            gpio_put(LED_PIN, 0);   // Wyłącz LED, gdy jasno
         }
 
         sleep_ms(10); // Krótka pauza, by nie obciążać CPU
